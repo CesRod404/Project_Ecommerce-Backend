@@ -5,7 +5,11 @@ import { authMiddleware, adminMiddleware } from "../middlewares/auth.js";
 import upload from "../middlewares/upload.js";
 import Pedido from "../models/Pedido.js";
 
+
 const router = express.Router();
+
+
+
 
 // Helper: parsear campo tallas de req.body de forma robusta
 function parseTallasFromBody(body) {
@@ -152,24 +156,6 @@ router.put("/producto/:id", authMiddleware, adminMiddleware, upload.single("imag
   } catch (err) {
     console.error("Error admin actualizar producto:", err);
     res.status(500).json({ message: "Error al actualizar producto", error: err.message });
-  }
-});
-
-// =========================
-// ELIMINAR PRODUCTO (ADMIN)
-// =========================
-router.delete("/producto/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const productoEliminado = await Producto.findByIdAndDelete(req.params.id);
-
-    if (!productoEliminado) {
-      return res.status(404).json({ message: "Producto no encontrado" });
-    }
-
-    res.json({ message: "Producto eliminado correctamente" });
-  } catch (err) {
-    console.error("Error admin eliminar producto:", err);
-    res.status(500).json({ message: "Error al eliminar producto", error: err.message });
   }
 });
 

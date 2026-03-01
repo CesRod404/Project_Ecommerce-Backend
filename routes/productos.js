@@ -3,6 +3,7 @@ import express from "express";
 import Producto from "../models/Producto.js";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth.js";
 import upload from "../middlewares/upload.js";
+import fs from "fs";
 
 const router = express.Router();
 
@@ -246,17 +247,56 @@ router.put(
 // ============================
 // ELIMINAR PRODUCTO (SOLO ADMIN)
 // ============================
+// ============================
+// ELIMINAR PRODUCTO (SOLO ADMIN)
+// ============================
 router.delete(
   "/:id",
   authMiddleware,
   adminMiddleware,
   async (req, res) => {
     try {
+      // Primero obtenemos el producto para tener la ruta de la imagen
+      const producto = await Producto.findById(req.params.id);
+      
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+
+      // Eliminamos el producto de la base de datos
       await Producto.findByIdAndDelete(req.params.id);
+
+      // Si el producto tenía una imagen, la eliminamos del sistema de archivos
+      if (producto.imagen) {
+        try {
+          // La URL es algo como: /uploads/1772331023187.png
+          // Necesitamos extraer solo el nombre del archivo: 1772331023187.png
+          const imageUrl = producto.imagen;
+          const fileName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+          
+          // Importar fs para eliminar el archivo
+          const fs = await import('fs');
+          
+          // La carpeta uploads está en la raíz del proyecto backend
+          const filePath = `${process.cwd()}/uploads/${fileName}`;
+          
+          // Verificamos si el archivo existe y lo eliminamos
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Imagen eliminada: ${fileName}`);
+          } else {
+            console.log(`Archivo no encontrado: ${fileName}`);
+          }
+        } catch (fileError) {
+          console.error("Error al eliminar la imagen:", fileError);
+        }
+      }
+
       res.json({ message: "Producto eliminado correctamente" });
     } catch (error) {
-      res.status(400).json({
-        message: "Error al eliminar",
+      console.error("Error al eliminar producto:", error);
+      res.status(500).json({
+        message: "Error al eliminar producto",
         error: error.message
       });
     }
